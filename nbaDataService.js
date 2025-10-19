@@ -83,12 +83,12 @@ class NBADataService {
                     const currentRecord = `${winsVal}-${lossesVal}`;
                     // Project to 82 games
                     const gamesPlayed = winsVal + lossesVal;
-                    if (gamesPlayed >= 5) { // Only project if at least 5 games played
+                    if (gamesPlayed >= 3) { // Project if at least 3 games played
                       const winPct = winsVal / gamesPlayed;
                       const projWins = Math.round(winPct * 82);
                       projectedWins = `~${projWins} wins projected (Current: ${currentRecord})`;
                     } else {
-                      projectedWins = `Current: ${currentRecord} (too early to project)`;
+                      projectedWins = `Current: ${currentRecord}`;
                     }
                   }
                 }
