@@ -69,8 +69,8 @@ class NBADataService {
               const team = parsed.team;
 
               // Extract team record and standings
-              let projectedWins = '41-41';
-              let outlook = 'Competitive NBA team.';
+              let currentRecord = '';
+              let gamesPlayed = 0;
 
               if (team.record && team.record.items && team.record.items.length > 0) {
                 const record = team.record.items[0];
@@ -80,25 +80,39 @@ class NBADataService {
                   if (wins && losses) {
                     const winsVal = parseInt(wins.value);
                     const lossesVal = parseInt(losses.value);
-                    const currentRecord = `${winsVal}-${lossesVal}`;
-                    // Project to 82 games
-                    const gamesPlayed = winsVal + lossesVal;
-                    if (gamesPlayed >= 3) { // Project if at least 3 games played
-                      const winPct = winsVal / gamesPlayed;
-                      const projWins = Math.round(winPct * 82);
-                      projectedWins = `~${projWins} wins projected (Current: ${currentRecord})`;
-                    } else {
-                      projectedWins = `Current: ${currentRecord}`;
-                    }
+                    gamesPlayed = winsVal + lossesVal;
+                    currentRecord = `${winsVal}-${lossesVal}`;
                   }
                 }
               }
 
               // Get team outlook
-              outlook = this.generateTeamOutlook(team, parsed);
+              const liveOutlook = this.generateTeamOutlook(team, parsed);
 
-              // Get fallback data and merge with live data
+              // Get fallback data with pre-season projections
               const fallback = this.getFallbackTeamData(team.displayName || team.name);
+
+              // Use pre-season projections early in season (< 20 games)
+              // Switch to live projections once we have enough data
+              let projectedWins;
+              let outlook;
+
+              if (gamesPlayed >= 20) {
+                // Enough games for live projection
+                const wins = parseInt(team.record.items[0].stats.find(s => s.name === 'wins').value);
+                const winPct = wins / gamesPlayed;
+                const projWins = Math.round(winPct * 82);
+                projectedWins = `~${projWins} wins projected (Current: ${currentRecord})`;
+                outlook = liveOutlook;
+              } else if (gamesPlayed > 0) {
+                // Early season - use pre-season projection with current record
+                projectedWins = fallback ? `${fallback.projectedWins} (Currently ${currentRecord})` : `Current: ${currentRecord}`;
+                outlook = fallback ? fallback.outlook : liveOutlook;
+              } else {
+                // No games yet
+                projectedWins = fallback ? fallback.projectedWins : '41-41';
+                outlook = fallback ? fallback.outlook : 'Competitive NBA team.';
+              }
 
               resolve({
                 projectedWins,
