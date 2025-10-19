@@ -3,3 +3,10 @@ npm-debug.log
 .DS_Store
 *.log
 .env
+
+# Configuration with secrets
+config.yaml
+
+# Package lock files
+package-lock.json
+yarn.lock

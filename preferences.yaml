@@ -2,12 +2,14 @@
 # Customized preferences for Matt and Daniel
 # Configure your preferences for selecting seats at Madison Square Garden
 
-# Your names
+# Your names and email addresses
 users:
   - name: "Matt Diaz"
     id: "matt"
+    email: "matt@example.com"  # Replace with your actual email
   - name: "Daniel"
     id: "daniel"
+    email: "daniel@example.com"  # Replace with Daniel's actual email
 
 # Seat preferences (ranked by priority)
 preferences:

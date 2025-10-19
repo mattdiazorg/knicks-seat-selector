@@ -1,21 +1,38 @@
 {
   "name": "knicks-seat-selector",
-  "version": "1.0.0",
-  "description": "Tool to select optimal Knicks seats based on personal preferences",
+  "version": "2.0.0",
+  "description": "Automated Knicks seat selector with live ticket API integration and monthly email recommendations",
   "main": "seatSelector.js",
+  "bin": {
+    "knicks-seats": "./scheduler.js"
+  },
   "scripts": {
     "start": "node seatSelector.js",
-    "test": "node seatSelector.js"
+    "recommend": "node scheduler.js",
+    "schedule": "node scheduler.js schedule",
+    "test-email": "node scheduler.js test-email",
+    "install-deps": "npm install",
+    "setup": "echo 'Please copy config.example.yaml to config.yaml and add your API keys'"
   },
   "keywords": [
     "knicks",
     "madison-square-garden",
     "seat-selection",
-    "nba"
+    "nba",
+    "seatgeek",
+    "tickets",
+    "email",
+    "automation"
   ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "nodemailer": "^6.9.0",
+    "node-cron": "^3.0.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
   }
 }
