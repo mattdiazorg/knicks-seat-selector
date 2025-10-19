@@ -1,0 +1,21 @@
+{
+  "name": "knicks-seat-selector",
+  "version": "1.0.0",
+  "description": "Tool to select optimal Knicks seats based on personal preferences",
+  "main": "seatSelector.js",
+  "scripts": {
+    "start": "node seatSelector.js",
+    "test": "node seatSelector.js"
+  },
+  "keywords": [
+    "knicks",
+    "madison-square-garden",
+    "seat-selection",
+    "nba"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}
