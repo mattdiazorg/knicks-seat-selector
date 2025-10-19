@@ -15,7 +15,7 @@ class RecommendationScheduler {
   constructor(configPath = './config.yaml') {
     this.config = this.loadConfig(configPath);
     this.selector = new KnicksSeatSelector();
-    this.ticketAPI = new TicketAPI(this.config.seatgeek.api_key);
+    this.ticketAPI = new TicketAPI(this.config.seatgeek);
     this.emailService = new EmailService(this.config.email);
   }
 

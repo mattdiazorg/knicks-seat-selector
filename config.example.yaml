@@ -2,9 +2,11 @@
 # Copy this file to config.yaml and fill in your actual credentials
 
 # SeatGeek API Configuration
-# Get your API key at: https://seatgeek.com/account/develop
+# Get your credentials at: https://seatgeek.com/account/develop
+# You'll receive both a Client ID and Client Secret
 seatgeek:
-  api_key: "YOUR_SEATGEEK_CLIENT_ID_HERE"
+  client_id: "YOUR_SEATGEEK_CLIENT_ID_HERE"
+  client_secret: "YOUR_SEATGEEK_CLIENT_SECRET_HERE"
 
 # Email Configuration
 # For Gmail: You'll need to create an "App Password"
