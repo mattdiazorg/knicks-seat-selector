@@ -23,7 +23,7 @@ class TicketAPI {
    * @returns {Promise<Array>} List of upcoming games
    */
   async getUpcomingGames() {
-    const path = `/2/events?performers.slug=new-york-knicks&venue.city=New+York&per_page=25${this.getAuthParams()}`;
+    const path = `/2/events?performers.slug=new-york-knicks&venue.city=New+York&per_page=25${this.getAuthParams(false)}`;
 
     try {
       const data = await this.makeRequest(path);
@@ -40,7 +40,7 @@ class TicketAPI {
    * @returns {Promise<Array>} List of available tickets
    */
   async getTicketsForEvent(eventId) {
-    const path = `/2/events/${eventId}${this.getAuthParams()}`;
+    const path = `/2/events/${eventId}${this.getAuthParams(true)}`;
 
     try {
       const data = await this.makeRequest(path);
@@ -50,7 +50,7 @@ class TicketAPI {
 
       if (data.stats && data.stats.listing_count > 0) {
         // Get ticket listings
-        const listingsPath = `/2/events/${eventId}/listings${this.getAuthParams()}&per_page=100`;
+        const listingsPath = `/2/events/${eventId}/listings${this.getAuthParams(true)}&per_page=100`;
         const listingsData = await this.makeRequest(listingsPath);
 
         if (listingsData.listings) {
@@ -153,15 +153,16 @@ class TicketAPI {
 
   /**
    * Get authentication query parameters
+   * @param {boolean} firstParam - Whether this is the first query parameter
    * @returns {string} Query string with client_id and client_secret
    */
-  getAuthParams() {
+  getAuthParams(firstParam = true) {
     const params = new URLSearchParams();
     params.append('client_id', this.clientId);
     if (this.clientSecret) {
       params.append('client_secret', this.clientSecret);
     }
-    return '?' + params.toString();
+    return (firstParam ? '?' : '&') + params.toString();
   }
 
   /**
