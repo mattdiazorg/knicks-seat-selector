@@ -7,9 +7,10 @@ users:
   - name: "Matt Diaz"
     id: "matt"
     email: "m@mattdiaz.org"
-  - name: "Daniel"
-    id: "daniel"
-    email: "dlatzman@gmail.com"
+  # Temporarily disabled for testing
+  # - name: "Daniel"
+  #   id: "daniel"
+  #   email: "dlatzman@gmail.com"
 
 # Seat preferences (ranked by priority)
 preferences:

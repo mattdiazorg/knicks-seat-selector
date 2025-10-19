@@ -155,15 +155,18 @@ class EmailService {
         `;
       }
 
-      // Ticket links
+      // Ticket links - use SeatGeek event URL
+      const seatgeekUrl = `https://seatgeek.com/knicks-vs-${game.opponent.toLowerCase().replace(/\s+/g, '-')}-tickets/${gameDate.toISOString().split('T')[0]}`;
+
       const ticketLinksHTML = `
         <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #E5E7EB;">
           <div style="font-size: 14px; color: #6B7280; margin-bottom: 10px;">Find Tickets:</div>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="${seatgeekUrl}" style="background: #6C4FBB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">SeatGeek</a>
             <a href="https://www.stubhub.com/new-york-knicks-new-york-tickets/performer/429/" style="background: #FC4C02; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">StubHub</a>
-            <a href="https://seatgeek.com/new-york-knicks-tickets" style="background: #6C4FBB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">SeatGeek</a>
             <a href="https://www.ticketmaster.com/new-york-knicks-tickets/artist/806024" style="background: #026CDF; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">Ticketmaster</a>
           </div>
+          <div style="font-size: 12px; color: #9CA3AF; margin-top: 8px; font-style: italic;">SeatGeek link goes to this specific game. StubHub and Ticketmaster go to all Knicks games - search for the date.</div>
         </div>
       `;
 
@@ -295,9 +298,10 @@ class EmailService {
       }
 
       text += `Find Tickets:\n`;
-      text += `  StubHub: https://www.stubhub.com/new-york-knicks-new-york-tickets/performer/429/\n`;
-      text += `  SeatGeek: https://seatgeek.com/new-york-knicks-tickets\n`;
-      text += `  Ticketmaster: https://www.ticketmaster.com/new-york-knicks-tickets/artist/806024\n`;
+      const seatgeekUrl = `https://seatgeek.com/knicks-vs-${game.opponent.toLowerCase().replace(/\s+/g, '-')}-tickets/${gameDate.toISOString().split('T')[0]}`;
+      text += `  SeatGeek (this game): ${seatgeekUrl}\n`;
+      text += `  StubHub (all games): https://www.stubhub.com/new-york-knicks-new-york-tickets/performer/429/\n`;
+      text += `  Ticketmaster (all games): https://www.ticketmaster.com/new-york-knicks-tickets/artist/806024\n`;
       text += `\n${'-'.repeat(60)}\n\n`;
     }
 

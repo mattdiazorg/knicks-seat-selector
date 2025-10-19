@@ -103,7 +103,7 @@ class NBADataService {
               resolve({
                 projectedWins,
                 outlook,
-                stars: fallback ? fallback.stars : [],
+                stars: [], // Don't show hardcoded stars - they may be injured
                 excitement: fallback ? fallback.excitement : 5
               });
               return;
