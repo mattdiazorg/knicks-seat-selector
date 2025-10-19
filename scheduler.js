@@ -2,21 +2,22 @@
 
 /**
  * Monthly Email Scheduler
- * Runs seat recommendations and sends monthly emails
+ * Sends matchup recommendations highlighting exciting games at MSG
  */
 
-const KnicksSeatSelector = require('./seatSelector');
 const TicketAPI = require('./ticketAPI');
 const EmailService = require('./emailService');
+const NBADataService = require('./nbaDataService');
 const fs = require('fs');
 const yaml = require('js-yaml');
 
-class RecommendationScheduler {
-  constructor(configPath = './config.yaml') {
+class MatchupScheduler {
+  constructor(configPath = './config.yaml', prefsPath = './preferences.yaml') {
     this.config = this.loadConfig(configPath);
-    this.selector = new KnicksSeatSelector();
+    this.prefs = this.loadConfig(prefsPath);
     this.ticketAPI = new TicketAPI(this.config.seatgeek);
     this.emailService = new EmailService(this.config.email);
+    this.nbaData = new NBADataService();
   }
 
   loadConfig(path) {
@@ -24,119 +25,138 @@ class RecommendationScheduler {
       const fileContents = fs.readFileSync(path, 'utf8');
       return yaml.load(fileContents);
     } catch (e) {
-      console.error('Error loading config:', e.message);
-      console.error('Please create a config.yaml file with your API keys and email settings.');
+      console.error(`Error loading ${path}:`, e.message);
+      console.error('Please ensure the file exists and is properly formatted.');
       process.exit(1);
     }
   }
 
   /**
-   * Run the recommendation process
-   * Fetches tickets, analyzes them, and sends recommendations
+   * Run the matchup recommendation process
+   * Fetches upcoming games, ranks by excitement, sends email
    */
-  async runRecommendations() {
-    console.log(`\n🏀 Starting Knicks Seat Recommendation Process...`);
+  async runMatchupRecommendations() {
+    console.log(`\n🏀 Starting Knicks Game Scout...`);
     console.log(`Date: ${new Date().toLocaleString()}\n`);
 
     try {
-      // Fetch upcoming games and tickets
+      // Fetch upcoming games from SeatGeek
       console.log('📡 Fetching upcoming games from SeatGeek...');
-      const gameData = await this.ticketAPI.getUpcomingRecommendations(60);
+      const games = await this.ticketAPI.getUpcomingGames();
 
-      if (gameData.length === 0) {
+      if (games.length === 0) {
         console.log('No upcoming games found in the next 60 days.');
         return;
       }
 
-      console.log(`Found ${gameData.length} upcoming games with tickets.\n`);
+      // Filter to games in next 60 days
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() + 60);
+      const upcomingGames = games.filter(game => {
+        const gameDate = new Date(game.datetime_local);
+        return gameDate <= cutoffDate && gameDate > new Date();
+      });
 
-      // Process each game and find best seats
-      const recommendations = [];
-      for (const data of gameData) {
-        console.log(`Analyzing tickets for: ${data.game.title}`);
-        const bestSeats = this.selector.findBestSeats(data.tickets);
+      console.log(`Found ${upcomingGames.length} upcoming games.\n`);
 
-        if (bestSeats) {
-          // Get top recommendations
-          const allScored = data.tickets
-            .map(ticket => {
-              const sectionType = this.getSectionType(ticket.section);
-              if (!sectionType) return null;
-              const score = this.selector.scoreSection(ticket.section, ticket, sectionType);
-              if (score === 0) return null;
-              return {
-                ...ticket,
-                score,
-                totalCost: ticket.price * ticket.seats.length,
-                elevation: sectionType.elevation
-              };
-            })
-            .filter(t => t !== null)
-            .sort((a, b) => b.score - a.score);
+      // Process games and get excitement ratings
+      console.log('⭐ Rating matchups by excitement level...');
+      const gamesWithRatings = [];
 
-          if (allScored.length > 0) {
-            recommendations.push({
-              game: data.game,
-              bestSeats: allScored.slice(0, 5) // Top 5 recommendations
-            });
-            console.log(`  ✓ Found ${allScored.length} matching seats\n`);
-          }
-        }
+      for (const game of upcomingGames) {
+        const opponent = this.ticketAPI.extractOpponent(game.title);
+        const opponentInfo = await this.nbaData.getTeamInfo(opponent);
+        const excitement = opponentInfo?.excitement || 5;
+
+        // Check if this is a preferred opponent
+        const isPreferred = this.prefs.preferences?.games?.preferred_opponents?.includes(opponent) || false;
+
+        // Boost excitement for preferred opponents
+        const adjustedExcitement = isPreferred ? Math.min(excitement + 1, 10) : excitement;
+
+        gamesWithRatings.push({
+          id: game.id,
+          title: game.title,
+          opponent: opponent,
+          date: game.datetime_local,
+          venue: game.venue.name,
+          excitement: adjustedExcitement,
+          isPreferred: isPreferred,
+          opponentInfo: opponentInfo
+        });
+
+        const excitementLabel = adjustedExcitement >= 9 ? '🔥🔥🔥' :
+                               adjustedExcitement >= 7 ? '🔥🔥' :
+                               adjustedExcitement >= 6 ? '🔥' : '';
+        console.log(`  ${excitementLabel} ${opponent} - Excitement: ${adjustedExcitement}/10${isPreferred ? ' (Preferred)' : ''}`);
       }
 
-      if (recommendations.length === 0) {
-        console.log('No seats found matching your preferences.');
-        return;
-      }
+      // Sort by excitement level (highest first)
+      gamesWithRatings.sort((a, b) => b.excitement - a.excitement);
 
-      // Send email recommendations
-      console.log('📧 Sending email recommendations...');
-      const recipients = this.selector.preferences.users.map(u => u.email);
+      console.log(`\n📧 Sending matchup recommendations...`);
+      const recipients = this.prefs.users.map(u => u.email);
 
-      await this.emailService.sendRecommendations(recipients, recommendations);
+      await this.emailService.sendMatchupRecommendations(recipients, gamesWithRatings);
       console.log(`✓ Email sent successfully to: ${recipients.join(', ')}\n`);
 
       // Log summary
-      this.logSummary(recommendations);
+      this.logSummary(gamesWithRatings);
 
-      return recommendations;
+      return gamesWithRatings;
 
     } catch (error) {
-      console.error('Error running recommendations:', error.message);
+      console.error('Error running matchup recommendations:', error.message);
       throw error;
     }
   }
 
   /**
-   * Get section type info for a section
+   * Log summary of matchups
    */
-  getSectionType(section) {
-    const msgSeats = this.selector.msgSeats;
-    for (const [type, info] of Object.entries(msgSeats)) {
-      if (info.sections.includes(section)) {
-        return info;
-      }
-    }
-    return null;
-  }
+  logSummary(games) {
+    console.log('='.repeat(70));
+    console.log('UPCOMING MATCHUPS - SORTED BY EXCITEMENT');
+    console.log('='.repeat(70));
 
-  /**
-   * Log summary of recommendations
-   */
-  logSummary(recommendations) {
-    console.log('='.repeat(60));
-    console.log('RECOMMENDATION SUMMARY');
-    console.log('='.repeat(60));
-    for (const rec of recommendations) {
-      const gameDate = new Date(rec.game.date);
-      console.log(`\n${rec.game.opponent}`);
-      console.log(`Date: ${gameDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`);
-      if (rec.bestSeats.length > 0) {
-        const best = rec.bestSeats[0];
-        console.log(`Best: Section ${best.section}, Row ${best.row} - $${best.price}/seat (Score: ${best.score})`);
-      }
+    const mustSee = games.filter(g => g.excitement >= 9);
+    const premier = games.filter(g => g.excitement >= 7 && g.excitement < 9);
+    const exciting = games.filter(g => g.excitement >= 6 && g.excitement < 7);
+    const standard = games.filter(g => g.excitement < 6);
+
+    if (mustSee.length > 0) {
+      console.log(`\n🔥🔥🔥 MUST-SEE GAMES (${mustSee.length}):`);
+      mustSee.forEach(g => {
+        const date = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        console.log(`  ${date} - vs ${g.opponent}`);
+      });
     }
-    console.log('\n' + '='.repeat(60) + '\n');
+
+    if (premier.length > 0) {
+      console.log(`\n🔥🔥 PREMIER MATCHUPS (${premier.length}):`);
+      premier.forEach(g => {
+        const date = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        console.log(`  ${date} - vs ${g.opponent}`);
+      });
+    }
+
+    if (exciting.length > 0) {
+      console.log(`\n🔥 EXCITING GAMES (${exciting.length}):`);
+      exciting.forEach(g => {
+        const date = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        console.log(`  ${date} - vs ${g.opponent}`);
+      });
+    }
+
+    if (standard.length > 0) {
+      console.log(`\nStandard Matchups (${standard.length}):`);
+      standard.forEach(g => {
+        const date = new Date(g.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        console.log(`  ${date} - vs ${g.opponent}`);
+      });
+    }
+
+    console.log('\n' + '='.repeat(70) + '\n');
   }
 
   /**
@@ -148,12 +168,12 @@ class RecommendationScheduler {
     // Run on the 1st of each month at 9:00 AM
     const schedule = this.config.scheduler?.cron || '0 9 1 * *';
 
-    console.log(`📅 Scheduling monthly recommendations with cron: ${schedule}`);
+    console.log(`📅 Scheduling monthly matchup recommendations with cron: ${schedule}`);
     console.log(`Next run will be on the 1st of next month at 9:00 AM\n`);
 
     cron.schedule(schedule, async () => {
       console.log('🔔 Scheduled task triggered!');
-      await this.runRecommendations();
+      await this.runMatchupRecommendations();
     });
 
     // Keep the process running
@@ -166,14 +186,14 @@ if (require.main === module) {
   const args = process.argv.slice(2);
   const command = args[0];
 
-  const scheduler = new RecommendationScheduler();
+  const scheduler = new MatchupScheduler();
 
   if (command === 'schedule') {
     // Start the scheduler
     scheduler.scheduleMonthly();
   } else if (command === 'test-email') {
     // Test email configuration
-    const testRecipient = args[1] || scheduler.selector.preferences.users[0].email;
+    const testRecipient = args[1] || scheduler.prefs.users[0].email;
     console.log(`Sending test email to ${testRecipient}...`);
     scheduler.emailService.sendTestEmail(testRecipient)
       .then(() => {
@@ -186,16 +206,16 @@ if (require.main === module) {
       });
   } else {
     // Run immediately
-    scheduler.runRecommendations()
+    scheduler.runMatchupRecommendations()
       .then(() => {
-        console.log('✓ Recommendation process completed successfully!');
+        console.log('✓ Matchup recommendation process completed successfully!');
         process.exit(0);
       })
       .catch(err => {
-        console.error('✗ Recommendation process failed:', err.message);
+        console.error('✗ Matchup recommendation process failed:', err.message);
         process.exit(1);
       });
   }
 }
 
-module.exports = RecommendationScheduler;
+module.exports = MatchupScheduler;

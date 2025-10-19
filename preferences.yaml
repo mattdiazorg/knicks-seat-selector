@@ -6,10 +6,10 @@
 users:
   - name: "Matt Diaz"
     id: "matt"
-    email: "matt@example.com"  # Replace with your actual email
+    email: "m@mattdiaz.org"
   - name: "Daniel"
     id: "daniel"
-    email: "daniel@example.com"  # Replace with Daniel's actual email
+    email: "dlatzman@gmail.com"
 
 # Seat preferences (ranked by priority)
 preferences:

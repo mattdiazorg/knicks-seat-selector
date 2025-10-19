@@ -1,14 +1,16 @@
-# Knicks Seat Selector
+# Knicks Game Scout
 
-An automated tool that finds the best Knicks tickets based on your preferences and sends monthly email recommendations with live ticket data from SeatGeek.
+Your monthly guide to the most exciting Knicks games at Madison Square Garden. Get personalized matchup recommendations highlighting must-see games, star players, and team outlooks - all powered by live NBA data.
 
 ## Features
 
-- **Live Ticket API Integration**: Fetches real-time ticket availability from SeatGeek
-- **Smart Seat Scoring**: Automatically ranks seats based on your preferences
-- **Monthly Email Recommendations**: Scheduled emails with top seat picks for upcoming games
-- **Customizable Preferences**: Configure budget, location, view, and opponent preferences
-- **Beautiful HTML Emails**: Professionally formatted recommendations with direct ticket links
+- **🔥 Excitement Rankings**: Games rated by matchup quality and star power (1-10 scale)
+- **⭐ Star Player Spotlights**: See which elite players are coming to MSG
+- **📊 Live Team Data**: Current records, standings, and projections from ESPN API
+- **📧 Monthly Email Digest**: Beautiful HTML emails with all upcoming games sorted by excitement
+- **🎟️ Direct Ticket Links**: Quick access to StubHub, SeatGeek, and Ticketmaster
+- **🎯 Preferred Teams**: Automatically boost excitement for your favorite matchups
+- **100% Free**: Uses only free SeatGeek and ESPN APIs
 
 ## Quick Start
 
@@ -20,13 +22,13 @@ npm install
 
 ### 2. Get Your API Keys
 
-#### SeatGeek API Key
+#### SeatGeek API (Required - Free)
 1. Visit https://seatgeek.com/account/develop
 2. Sign up or log in
-3. Create an application to get your Client ID
-4. Copy your Client ID (this is your API key)
+3. Create an application to get your Client ID and Client Secret
+4. Used for fetching Knicks game schedules
 
-#### Gmail App Password (for email notifications)
+#### Gmail App Password (Required - Free)
 1. Enable 2-factor authentication on your Google account
 2. Visit https://myaccount.google.com/apppasswords
 3. Create a new app password for "Mail"
@@ -43,7 +45,8 @@ Edit `config.yaml` and add your credentials:
 
 ```yaml
 seatgeek:
-  api_key: "YOUR_SEATGEEK_CLIENT_ID"
+  client_id: "YOUR_SEATGEEK_CLIENT_ID"
+  client_secret: "YOUR_SEATGEEK_CLIENT_SECRET"
 
 email:
   service: "gmail"
@@ -57,17 +60,19 @@ Edit `preferences.yaml` and add your actual email addresses:
 
 ```yaml
 users:
-  - name: "Matt Diaz"
-    email: "your-actual-email@gmail.com"
-  - name: "Daniel"
-    email: "daniels-email@gmail.com"
+  - name: "Your Name"
+    id: "you"
+    email: "your-email@gmail.com"
+  - name: "Friend"
+    id: "friend"
+    email: "friend@gmail.com"
 ```
 
 ## Usage
 
-### Run Immediate Recommendation
+### Get Matchup Recommendations Now
 
-Get recommendations for upcoming games right now:
+See which games are most exciting this month:
 
 ```bash
 npm run recommend
@@ -79,12 +84,6 @@ Verify your email setup is working:
 
 ```bash
 npm run test-email
-```
-
-Or send to a specific email:
-
-```bash
-node scheduler.js test-email your-email@example.com
 ```
 
 ### Schedule Monthly Emails
@@ -103,33 +102,26 @@ The scheduler will keep running in the background. To run it persistently, consi
 
 ## Configuration
 
-### Seat Preferences (`preferences.yaml`)
+### Preferred Opponents (`preferences.yaml`)
 
-Configure your ideal seats:
+Tell the system which matchups you're most excited about:
 
 ```yaml
 preferences:
-  budget:
-    max_per_seat: 400    # Maximum price per seat
-    total_max: 600       # Maximum total for both seats
-    min_per_seat: 200    # Minimum price (premium only)
-
-  location:
-    max_row: 20          # Don't sit higher than row 20
-    aisle_seats: "strongly_preferred"
-    together: true       # Must be adjacent seats
-
-  view:
-    center_court_preference: "preferred"
-    avoid_corners: true
-    min_elevation: "lower"  # Only lower bowl sections
-
   games:
     preferred_opponents:
+      # Rivalries
       - "Celtics"
-      - "Lakers"
-      - "Warriors"
+      - "Nets"
+      - "76ers"
+      # Star players / marquee matchups
+      - "Lakers"      # LeBron James
+      - "Warriors"    # Stephen Curry
+      - "Mavericks"   # Luka Doncic
+      - "Bucks"       # Giannis
 ```
+
+Games against these teams get an automatic +1 excitement boost!
 
 ### Email Schedule (`config.yaml`)
 
@@ -148,26 +140,38 @@ scheduler:
 
 ## How It Works
 
-1. **Fetch Games**: Queries SeatGeek API for upcoming Knicks home games
-2. **Get Tickets**: Retrieves available ticket listings for each game
-3. **Score Seats**: Ranks each seat based on your preferences:
-   - Budget compliance (required)
-   - Section location (center court vs corners)
-   - Row preference
-   - Aisle seats
-   - Price value ratio
-4. **Send Email**: Generates beautiful HTML email with top 3 recommendations per game
-5. **Direct Links**: Each recommendation includes a link to purchase on SeatGeek
+1. **Fetch Games**: Queries SeatGeek API for upcoming Knicks home games (next 60 days)
+2. **Get Team Data**: Pulls live stats, standings, and projections from ESPN API
+3. **Rate Excitement**: Each matchup gets a 1-10 rating based on:
+   - Star power (LeBron, Giannis, Luka, etc. = 9-10)
+   - Team quality (Championship contenders = 8-10)
+   - Rivalry factor (Celtics, Nets, 76ers = higher)
+   - Your preferred opponents (+1 boost)
+4. **Sort by Excitement**: Games ranked from must-see (🔥🔥🔥) to standard matchups
+5. **Send Beautiful Email**: HTML email with:
+   - Excitement badges (🔥🔥🔥 MUST-SEE, 🔥🔥 PREMIER, 🔥 EXCITING)
+   - Star player stats and info
+   - Team outlooks and current records
+   - Direct links to ticket platforms
+
+## Excitement Rating System
+
+- **10/10**: Generational talents (LeBron, Curry, Giannis, Jokic)
+- **9/10**: Elite stars and championship rematches (Celtics, 76ers, Bucks)
+- **8/10**: Rising superstars and strong contenders (SGA, Ant Edwards)
+- **7/10**: Playoff teams with All-Stars
+- **6/10**: Competitive teams, exciting players
+- **5/10 and below**: Rebuilding teams, standard matchups
 
 ## Project Structure
 
 ```
-knicks-seat-selector/
-├── seatSelector.js      # Core seat scoring logic
-├── ticketAPI.js         # SeatGeek API integration
-├── emailService.js      # Email generation and sending
-├── scheduler.js         # Monthly automation scheduler
-├── preferences.yaml     # Your seat preferences
+knicks-game-scout/
+├── scheduler.js         # Main orchestrator - ranks games and sends emails
+├── emailService.js      # Email generation with matchup highlights
+├── nbaDataService.js    # ESPN API integration for live team data
+├── ticketAPI.js         # SeatGeek API integration for game schedules
+├── preferences.yaml     # Your preferred opponents
 ├── config.yaml          # API keys and email settings (not committed)
 ├── config.example.yaml  # Template for configuration
 └── README.md           # This file
@@ -175,28 +179,52 @@ knicks-seat-selector/
 
 ## Example Email Output
 
-Your monthly email will include:
+Your monthly email will look like this:
 
 ```
-🏀 Your Knicks Seat Recommendations
+🏀 KNICKS GAME SCOUT
+Your Monthly Guide to Must-See Matchups
 
-VS BOSTON CELTICS
-Friday, March 15, 2024 at 7:30 PM
-Madison Square Garden
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-⭐ BEST MATCH
-Section 115, Row 12
-Seats: 1, 2 (Aisle)
-$380/seat (Total: $760)
-Match Score: 95/100
-Elevation: lower
-[View Tickets →]
+🔥🔥🔥 MUST-SEE GAME
 
-#2
-Section 109, Row 15
-Seats: 8, 9
-$350/seat (Total: $700)
-Match Score: 88/100
+   15        vs Los Angeles Lakers
+   DEC       Friday, December 15, 2024 at 7:30 PM
+   FRI       Madison Square Garden
+
+Team Outlook
+Championship experience. LeBron and AD still elite when healthy.
+Record: ~46 wins projected (Current: 18-14)
+
+⭐ Star Players to Watch
+• LeBron James - 25.7 PPG, 8.3 APG, 7.3 RPG
+• Anthony Davis - 24.7 PPG, 12.6 RPG, 2.3 BPG
+• Austin Reaves - 15.9 PPG, 5.5 APG, 4.3 RPG
+
+Find Tickets:
+[StubHub] [SeatGeek] [Ticketmaster]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔥🔥 PREMIER MATCHUP
+
+   22        vs Boston Celtics
+   DEC       Sunday, December 22, 2024 at 3:00 PM
+   SUN       Madison Square Garden
+
+Team Outlook
+Defending champions looking to repeat. Elite two-way play.
+Record: ~58 wins projected (Current: 24-8)
+
+⭐ Star Players to Watch
+• Jayson Tatum - 28.4 PPG, 8.6 RPG, 5.7 APG
+• Jaylen Brown - 25.7 PPG, 6.2 RPG, 5.1 APG
+• Derrick White - 15.1 PPG, 4.2 APG, 4.1 RPG
+
+Find Tickets:
+[StubHub] [SeatGeek] [Ticketmaster]
+
 ...
 ```
 
@@ -208,19 +236,23 @@ Match Score: 88/100
 - **2FA Required**: Gmail requires 2-factor authentication enabled
 - **Less Secure Apps**: Don't use this option, use App Passwords instead
 
-### No Recommendations Found
+### No Games Found
 
 - Check your SeatGeek API key is valid
-- Verify your budget constraints aren't too restrictive
-- Try expanding your `max_row` or relaxing other preferences
 - Make sure there are upcoming home games (check SeatGeek.com)
+- Verify the date range (default is next 60 days)
 
 ### API Rate Limits
 
-SeatGeek free tier limits:
+**SeatGeek** (free tier):
 - 5,000 requests per day
 - Should be plenty for monthly emails
 - Each run uses ~5-10 requests
+
+**ESPN API** (free):
+- Publicly accessible
+- No authentication required
+- Reasonable usage expected
 
 ## Advanced Usage
 
@@ -233,10 +265,10 @@ For continuous operation, use a process manager:
 npm install -g pm2
 
 # Start scheduler
-pm2 start scheduler.js --name knicks-seats -- schedule
+pm2 start scheduler.js --name knicks-scout -- schedule
 
 # View logs
-pm2 logs knicks-seats
+pm2 logs knicks-scout
 
 # Auto-restart on boot
 pm2 startup
@@ -245,9 +277,9 @@ pm2 save
 
 ### Custom Email Templates
 
-Edit `emailService.js` to customize the HTML template in the `generateEmailHTML()` method.
+Edit `emailService.js` to customize the HTML template in the `generateMatchupEmailHTML()` method.
 
-### Multiple Users
+### Multiple Recipients
 
 Add more users to `preferences.yaml`:
 
@@ -261,11 +293,23 @@ users:
     email: "person3@example.com"
 ```
 
-All users will receive the same recommendations.
+All users will receive the same matchup recommendations.
+
+### Customize Excitement Ratings
+
+Edit the `excitement` ratings in `nbaDataService.js` under `getFallbackTeamData()` to adjust which matchups get highlighted:
+
+```javascript
+'Los Angeles Lakers': {
+  excitement: 10, // 1-10 scale
+  // ... rest of team data
+}
+```
 
 ## API Documentation
 
 - **SeatGeek API**: https://platform.seatgeek.com/
+- **ESPN API**: https://site.api.espn.com/apis/site/v2/sports/basketball/nba
 - **Nodemailer**: https://nodemailer.com/
 - **node-cron**: https://github.com/node-cron/node-cron
 
@@ -276,3 +320,7 @@ Feel free to submit issues or pull requests!
 ## License
 
 MIT
+
+---
+
+🏀 **Let's Go Knicks!**
